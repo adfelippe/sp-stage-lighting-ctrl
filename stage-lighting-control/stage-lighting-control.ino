@@ -1,14 +1,17 @@
-#define   RL_1          8
-#define   RL_2          7
-#define   RL_3          6
-#define   RL_4          5
-#define   RL_5          4
-#define   BUTTON_MODE   3
-#define   BUTTON_HALT   2
-#define   MAX_MODE      6   // Maximum number of animation modes
+#define   RL_1            8
+#define   RL_2            7
+#define   RL_3            6
+#define   RL_4            5
+#define   RL_5            4
+#define   BUTTON_MODE     3
+#define   BUTTON_HALT     2
+#define   MAX_MODE        6     // Maximum number of animation modes
+#define   DEBOUNCE_TIME   110    // Debounce time in milliseconds
 
-volatile byte mode = 0;
+volatile uint8_t mode = 0;
 volatile bool isButtonPressed = false;
+uint32_t counter_start = 0;
+uint16_t animationDelay[MAX_MODE] = {1000, 2000, 4000, 6000, 8000, 10000};
 
 void setup()
 {
@@ -31,49 +34,22 @@ void setup()
 void loop()
 {
   runSequence();
-  //Serial.println(mode);
+  Serial.println(mode);
 }
 
 void runSequence(void)
 {
-  int animationDelay;
-  int counter_start;
-  
-  switch(mode) {
-    case 0:
-      AllRelaysOff();
-      return;
-    case 1:
-      animationDelay = 10000;
-      break;
-    case 2:
-      animationDelay = 8000;
-      break;
-    case 3:
-      animationDelay = 6000;
-      break;
-    case 4:
-      animationDelay = 4000;
-      break;
-    case 5:
-      animationDelay = 2000;
-      break;
-    case 6:
-      animationDelay = 1000;
-      break;
-    default:
-      AllRelaysOff();
-      return;
-  }
-  // Assure button state begins not pressed
-  isButtonPressed = false;
-  
   for (int i = RL_1; i >= RL_5; i--) {
+
+      if (mode == 0) {
+        AllRelaysOff();
+        return;
+      }
 
       // Light animation 
       counter_start = millis();
-        
-      while ((millis() - counter_start) < animationDelay) {
+      // Delay loop
+      while ((millis() - counter_start) < animationDelay[mode - 1]) {
           setRelayOn(i);
           if (isButtonPressed) {
               AllRelaysOff();
@@ -85,24 +61,41 @@ void runSequence(void)
   }
 }
 
-void changeMode_ISR(void)
+void changeMode_ISR()
 {
-  AllRelaysOff();
+  static unsigned long previousStateChangeMillis = 0;
+  static bool previousPinState = HIGH;
+
+  bool pinState = digitalRead(BUTTON_MODE);
+  if (pinState == LOW) { // only falling events
+    if ((millis() - previousStateChangeMillis) > DEBOUNCE_TIME) { // debounce
+      if (mode < MAX_MODE)
+        ++mode;
+      else
+        mode = 1;
+      isButtonPressed = true;
+    }
+  }
   
-  if (mode < MAX_MODE)
-    ++mode;
-  else
-    mode = 0;
-
-  isButtonPressed = true;
+  previousStateChangeMillis = millis();
 }
 
-void haltCall_ISR(void)
+void haltCall_ISR()
 {
-  AllRelaysOff();
-  mode = 0;
-  isButtonPressed = true;
+  static unsigned long previousStateChangeMillis = 0;
+  static bool previousPinState = HIGH;
+
+  bool pinState = digitalRead(BUTTON_HALT);
+  if (pinState == LOW) { // only falling events
+    if ((millis() - previousStateChangeMillis) > DEBOUNCE_TIME) { // debounce
+      mode = 0;
+      isButtonPressed = true;
+    }
+  }
+  
+  previousStateChangeMillis = millis();
 }
+
 
 void AllRelaysOff(void)
 {
