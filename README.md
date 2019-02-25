@@ -7,6 +7,6 @@ Unfortunately, there's no schematics nor any sort of decent documentation.
 If you read this code and find anything useful in it (software debounce for example), please feel free to copy and use it any way you want it.
 
 In fact, it's just a personal project for the band I'm in, which I'm the lead singer and it's called **SILENCE PHOBIA**.
-If you're intro Heavy Metal, please check us out:
+If you're into Heavy Metal, please check us out:
 - [YouTube Channel](https://www.youtube.com/channel/UCLAoY-ldTdwwDySCUZChF9Q)
 - [Facebook Page](https://www.facebook.com/silencephobia/)
